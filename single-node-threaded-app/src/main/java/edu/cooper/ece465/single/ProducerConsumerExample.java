@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 public class ProducerConsumerExample {
-    private static final Logger LOG = LogManager.getLogger(ProducerConsumerExample.class);
+    private static final org.apache.logging.log4j.Logger LOG = LogManager.getLogger(ProducerConsumerExample.class);
 
     public static int PROD_SIZE = 5;
     public static int CONSUME_SIZE = 5;
