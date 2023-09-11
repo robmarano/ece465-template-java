@@ -22,3 +22,23 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# MacOS
+.DS_Store
+
+# IntelliJ IDEA
+.idea/
+compiler.xml
+encodings.xml
+jarRepositories.xml
+misc.xml
+vcs.xml
+workspace.xml
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
