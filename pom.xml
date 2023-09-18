@@ -20,6 +20,7 @@
 		<maven-release-plugin.version>3.0.1</maven-release-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+		<maven.plugin.validation>DEFAULT</maven.plugin.validation>
 		<maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
 		<maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
 		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
@@ -59,7 +60,7 @@
 
 	<modules>
 		<module>commons</module>
-		<module>single-node-threaded-app</module>
+		<module>networked-app</module>
 	</modules>
 
 	<build>

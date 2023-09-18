@@ -9,18 +9,18 @@
     <version>0.0.1</version>
   </parent>
 
-  <groupId>edu.cooper.ece465.single</groupId>
-  <artifactId>single-node-threaded-app</artifactId>
+  <groupId>edu.cooper.ece465</groupId>
+  <artifactId>networked-app</artifactId>
   <version>0.0.1</version>
   <packaging>jar</packaging>
 
-  <name>single-node-threaded-app</name>
+  <name>networked-app</name>
   <url>https://ee.cooper.edu</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <artifactId>edu.cooper.ece465.single</artifactId>
-    <name>single-node-threaded-app</name>
+    <artifactId>edu.cooper.ece465</artifactId>
+    <name>networked-app</name>
     <portNumber>1971</portNumber>
   </properties>
 
@@ -78,7 +78,7 @@
               <manifest>
                 <addClasspath>true</addClasspath>
                 <classpathPrefix>lib/</classpathPrefix>
-                <mainClass>edu.cooper.ece465.single.ProducerConsumerExample</mainClass>
+                <mainClass>edu.cooper.ece465.networking.Server</mainClass>
               </manifest>
             </archive>
             <filters>
