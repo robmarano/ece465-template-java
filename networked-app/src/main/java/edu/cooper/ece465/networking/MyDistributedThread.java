@@ -10,8 +10,9 @@ public class MyDistributedThread extends Thread {
     private Socket socket = null;
 
     public MyDistributedThread(Socket socket) {
-        super("DistributedImagingThread");
+        super("MyDistributedThread");
         this.socket = socket;
+        System.out.println(socket.toString());
     }
 
     public void run() {
