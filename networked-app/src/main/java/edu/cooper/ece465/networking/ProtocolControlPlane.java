@@ -1,28 +1,18 @@
 package edu.cooper.ece465.networking;
 
-public class MyDistributedProtocol {
-    private static final int WAITING = 0;
-    private static final int SENTKNOCKKNOCK = 1;
-    private static final int SENTCLUE = 2;
-    private static final int ANOTHER = 3;
+public class ProtocolControlPlane {
 
-    private static final int NUMJOKES = 5;
+    private enum STATES {
+        STARTUP, DISCONNECTED, CONNECTED, READY, PROCESSING, SHUTDOWN
+    };
 
-    private int state = WAITING;
-    private int currentJoke = 0;
-
-    private String[] clues = { "Turnip", "Little Old Lady", "Atch", "Who", "Who" };
-    private String[] answers = { "Turnip the heat, it's cold in here!",
-            "I didn't know you could yodel!",
-            "Bless you!",
-            "Is there an owl in here?",
-            "Is there an echo in here?" };
+    private String[] COMMANDS = { "SEND_FILE", "RCV_FILE", "GET_TIME", "DISCONNECT", "SHUTDOWN" };
 
     public String processInput(String theInput) {
         String theOutput = null;
 
         if (state == WAITING) {
-            theOutput = "Knock! Knock!";
+            theOutput = "Waiting for a command...";
             state = SENTKNOCKKNOCK;
         } else if (state == SENTKNOCKKNOCK) {
             if (theInput.equalsIgnoreCase("Who's there?")) {
@@ -59,4 +49,3 @@ public class MyDistributedProtocol {
         return theOutput;
     }
 }
-

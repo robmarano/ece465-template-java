@@ -6,10 +6,10 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class MyDistributedThread extends Thread {
+public class ProtocolDataPlane extends Thread {
     private Socket socket = null;
 
-    public MyDistributedThread(Socket socket) {
+    public ProtocolDataPlane(Socket socket) {
         super("MyDistributedThread");
         this.socket = socket;
         System.out.println(socket.toString());
@@ -24,7 +24,7 @@ public class MyDistributedThread extends Thread {
                                 socket.getInputStream()));
         ) {
             String inputLine, outputLine;
-            MyDistributedProtocol dip = new MyDistributedProtocol();
+            ProtocolControlPlane dip = new ProtocolControlPlane();
             outputLine = dip.processInput(null);
             out.println(outputLine);
 
