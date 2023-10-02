@@ -9,45 +9,57 @@ import java.net.UnknownHostException;
 
 public class Client {
     public static void main(String[] args) throws Exception {
+        String hostName;
+        int cportNumber;
+        int dportNumber;
 
-        if (args.length != 2) {
+        if (args.length != 3) {
+            hostName = "localhost";
+            cportNumber = DefaultConfigurations.DEFAULT_CONTROL_PLANE_PORT;
+            dportNumber = DefaultConfigurations.DEFAULT_DATA_PLANE_PORT;
             System.err.println(
-                    "Usage: java Client <host name> <port number>");
-            System.exit(1);
+                    "Usage: java Client <host name> <control plane port number> <data plane port number");
+            System.out.printf("Using default port numbers for control (%d) and data (%d) ports\n", cportNumber, dportNumber);
+        } else {
+            hostName = args[0];
+            cportNumber = Integer.parseInt(args[1]);
+            dportNumber = Integer.parseInt(args[2]);
         }
-
-        String hostName = args[0];
-        int portNumber = Integer.parseInt(args[1]);
+        System.out.printf("Connecting to %s: control (%d) and data (%d) ports.\n", hostName, cportNumber, dportNumber);
 
         try (
-                Socket kkSocket = new Socket(hostName, portNumber);
-                PrintWriter out = new PrintWriter(kkSocket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(kkSocket.getInputStream()));
+                // setup control plane with server
+                Socket cSocket = new Socket(hostName, cportNumber);
+                PrintWriter cout = new PrintWriter(cSocket.getOutputStream(), true);
+                BufferedReader cin = new BufferedReader(new InputStreamReader(cSocket.getInputStream()));
+                // set up data plane with server
+                Socket dSocket = new Socket(hostName, dportNumber);
         ) {
-            BufferedReader stdIn =
-                    new BufferedReader(new InputStreamReader(System.in));
+            // Sending commands over control plane
+            BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
             String fromServer;
             String fromUser;
 
-            while ((fromServer = in.readLine()) != null) {
+            cout.println("CONNECT");
+
+            while ((fromServer = cin.readLine()) != null) {
                 System.out.println("Server: " + fromServer);
-                if (fromServer.equals("Bye."))
+                if (fromServer.equals("BYE"))
                     break;
 
                 fromUser = stdIn.readLine();
                 if (fromUser != null) {
                     System.out.println("Client: " + fromUser);
-                    out.println(fromUser);
+                    cout.println(fromUser);
                 }
             }
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
-            System.exit(1);
+            System.exit(-1);
         } catch (IOException e) {
             System.err.println("Couldn't get I/O for the connection to " +
                     hostName);
-            System.exit(1);
+            System.exit(-2);
         }
     }
 }

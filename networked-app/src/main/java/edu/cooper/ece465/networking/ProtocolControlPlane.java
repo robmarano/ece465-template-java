@@ -1,50 +1,81 @@
 package edu.cooper.ece465.networking;
 
+import java.util.Locale;
+
 public class ProtocolControlPlane {
 
-    private enum STATES {
-        STARTUP, DISCONNECTED, CONNECTED, READY, PROCESSING, SHUTDOWN
+    protected enum STATE {
+        STARTUP, READY, CONNECT, DISCONNECT, PROCESSING, SHUTDOWN
     };
+    protected String[] COMMANDS = { "CONNECT", "SEND_FILE", "RCV_FILE", "GET_TIME", "DISCONNECT", "SHUTDOWN" };
+    protected STATE state;
+    public ProtocolControlPlane() {
+        this.setState(STATE.STARTUP);
+    }
 
-    private String[] COMMANDS = { "SEND_FILE", "RCV_FILE", "GET_TIME", "DISCONNECT", "SHUTDOWN" };
+    public STATE getState() {
+        return this.state;
+    }
+
+    protected void setState(STATE state) {
+        this.state = state;
+    }
+
+    protected String process(String input) {
+        String output;
+        switch (input.toUpperCase()) {
+            case "CONNECT":
+                this.setState(STATE.CONNECT);
+                output = "CONNECTED";
+                break;
+            case "DISCONNECT":
+                this.setState(STATE.DISCONNECT);
+                output = "BYE";
+                break;
+            case "SHUTDOWN":
+                this.setState(STATE.SHUTDOWN);
+                output = "SHUTTING DOWN";
+                break;
+            default:
+                this.setState(STATE.READY);
+                output = "READY";
+                break;
+        }
+        return(output);
+    }
+
 
     public String processInput(String theInput) {
         String theOutput = null;
 
-        if (state == WAITING) {
-            theOutput = "Waiting for a command...";
-            state = SENTKNOCKKNOCK;
-        } else if (state == SENTKNOCKKNOCK) {
-            if (theInput.equalsIgnoreCase("Who's there?")) {
-                theOutput = clues[currentJoke];
-                state = SENTCLUE;
-            } else {
-                theOutput = "You're supposed to say \"Who's there?\"! " +
-                        "Try again. Knock! Knock!";
-            }
-        } else if (state == SENTCLUE) {
-            if (theInput.equalsIgnoreCase(clues[currentJoke] + " who?")) {
-                theOutput = answers[currentJoke] + " Want another? (y/n)";
-                state = ANOTHER;
-            } else {
-                theOutput = "You're supposed to say \"" +
-                        clues[currentJoke] +
-                        " who?\"" +
-                        "! Try again. Knock! Knock!";
-                state = SENTKNOCKKNOCK;
-            }
-        } else if (state == ANOTHER) {
-            if (theInput.equalsIgnoreCase("y")) {
-                theOutput = "Knock! Knock!";
-                if (currentJoke == (NUMJOKES - 1))
-                    currentJoke = 0;
-                else
-                    currentJoke++;
-                state = SENTKNOCKKNOCK;
-            } else {
-                theOutput = "Bye.";
-                state = WAITING;
-            }
+        switch (this.getState()) {
+            case STARTUP:
+                System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
+                theOutput = this.process(theInput);
+                break;
+            case CONNECT:
+                System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
+                theOutput = this.process(theInput);
+                break;
+            case DISCONNECT:
+                System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
+                theOutput = this.process(theInput);
+                break;
+            case READY:
+                System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
+                theOutput = this.process(theInput);
+                break;
+            case PROCESSING:
+                System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
+                theOutput = this.process(theInput);
+                break;
+            case SHUTDOWN:
+                System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
+                theOutput = this.process(theInput);
+                break;
+            default:
+                System.err.printf("reach unknown state (%s) in ProcessControlPlane\n", state.toString());
+                break;
         }
         return theOutput;
     }
