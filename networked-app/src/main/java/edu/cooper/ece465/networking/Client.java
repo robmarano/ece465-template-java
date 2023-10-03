@@ -1,9 +1,6 @@
 package edu.cooper.ece465.networking;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -34,6 +31,8 @@ public class Client {
                 BufferedReader cin = new BufferedReader(new InputStreamReader(cSocket.getInputStream()));
                 // set up data plane with server
                 Socket dSocket = new Socket(hostName, dportNumber);
+                BufferedReader din = new BufferedReader(new InputStreamReader(dSocket.getInputStream()));
+                DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(dSocket.getOutputStream()));
         ) {
             // Sending commands over control plane
             BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
@@ -49,10 +48,24 @@ public class Client {
 
                 fromUser = stdIn.readLine();
                 if (fromUser != null) {
-                    System.out.println("Client: " + fromUser);
+                    String[] commands = fromUser.split(" ");
+                    if (commands[0].equalsIgnoreCase("UPLOAD")) {
+                        File file = new File("test.txt");
+                        InputStream in = new FileInputStream(file);
+                        byte[] buffer = new byte[1024];
+                        int bytesRead;
+                        while ((bytesRead = in.read(buffer)) != -1) {
+                            dout.write(buffer, 0, bytesRead);
+                        }
+                    }
+
+//                    System.out.println("Client: " + fromUser);
                     cout.println(fromUser);
                 }
             }
+        } catch (FileNotFoundException e) {
+            System.err.println("Couldn't get file to send ");
+            System.exit(-3);
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
             System.exit(-1);

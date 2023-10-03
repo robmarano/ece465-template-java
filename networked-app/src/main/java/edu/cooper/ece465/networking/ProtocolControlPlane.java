@@ -5,7 +5,7 @@ import java.util.Locale;
 public class ProtocolControlPlane {
 
     protected enum STATE {
-        STARTUP, READY, CONNECT, DISCONNECT, PROCESSING, SHUTDOWN
+        STARTUP, READY, CONNECT, DISCONNECT, PROCESSING, SHUTDOWN, UPLOAD
     };
     protected String[] COMMANDS = { "CONNECT", "SEND_FILE", "RCV_FILE", "GET_TIME", "DISCONNECT", "SHUTDOWN" };
     protected STATE state;
@@ -27,6 +27,10 @@ public class ProtocolControlPlane {
             case "CONNECT":
                 this.setState(STATE.CONNECT);
                 output = "CONNECTED";
+                break;
+            case "UPLOAD":
+                this.setState(STATE.UPLOAD);
+                output = "START UPLOAD";
                 break;
             case "DISCONNECT":
                 this.setState(STATE.DISCONNECT);
@@ -57,6 +61,9 @@ public class ProtocolControlPlane {
                 System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
                 theOutput = this.process(theInput);
                 break;
+            case UPLOAD:
+                System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
+                theOutput = this.process(theInput);
             case DISCONNECT:
                 System.out.printf("%s is in %s state.\n",this.getClass().getName(), this.getState().toString());
                 theOutput = this.process(theInput);

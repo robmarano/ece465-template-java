@@ -14,7 +14,8 @@ public class ServerMonitorThread extends Thread {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             while (!(this.shutdown = this.serverInstance.pendingShutdown())) {
-                System.out.printf("ServerMonitorThread: shutdown = %b\n", this.getShutdown());
+                //System.out.printf("ServerMonitorThread: shutdown = %b\n", this.getShutdown());
+                System.out.print('.');
                 if (this.getShutdown()) {
                     synchronized (this.serverInstance) {
                         this.serverInstance.shutdown();

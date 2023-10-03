@@ -33,6 +33,10 @@ public class ServerAppCPlaneThread extends Thread {
             while (!Thread.currentThread().isInterrupted()) {
                 while ((inputLine = in.readLine()) != null) {
                     outputLine = cproto.processInput(inputLine);
+                    if (outputLine.equalsIgnoreCase("START UPLOAD")) {
+                        server.dplaneThread = new ServerAppDPlaneThread(server, server.serverSocketDPlane.accept());
+                        server.dplaneThread.start();
+                    }
                     out.println(outputLine);
                     if (outputLine.equals("BYE"))
                         break;

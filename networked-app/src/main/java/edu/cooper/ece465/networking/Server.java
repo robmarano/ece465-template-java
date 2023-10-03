@@ -11,9 +11,9 @@ public class Server extends Thread {
     protected int controlPlanePort;
     protected int dataPlanePort;
     protected ServerSocket serverSocketCPlane;
-    protected ServerSocket serverSocketDPlane;
+    public ServerSocket serverSocketDPlane;
     protected ServerAppCPlaneThread cplaneThread;
-    protected ServerAppCPlaneThread dplaneThread;
+    public ServerAppDPlaneThread dplaneThread;
 
     ServerMonitorThread monitorThread;
 
@@ -62,7 +62,7 @@ public class Server extends Thread {
         for (ServerAppCPlaneThread thread : serverThreadList) {
             result = result || thread.isShuttingdown();
         }
-        System.out.println("Server shutdown flag = "+result);
+        //System.out.println("Server shutdown flag = "+result);
         return(result);
     }
 
@@ -78,7 +78,7 @@ public class Server extends Thread {
                 cplaneThread = new ServerAppCPlaneThread(this, this.serverSocketCPlane.accept());
                 cplaneThread.start();
                 this.addServerThreadToList(cplaneThread);
-//                dplaneThread = new ServerAppCPlaneThread(serverInstance, serverInstance.serverSocketDPlane.accept());
+//                dplaneThread = new ServerAppDPlaneThread(this, this.serverSocketDPlane.accept());
 //                dplaneThread.start();
             }
             monitorThread.join();
