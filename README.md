@@ -1,7 +1,7 @@
-# ece465-template-java
+# README.md
 
-ECE 465 Source Code Template for Java
-
-Recommended facility to manage your versions of Java on your development host: https://www.jenv.be/
-
-Suggested distribution of Java: [Amazon Corretto](https://docs.aws.amazon.com/corretto/) &mdash; Let's use version 20.
+## Wireshark listening in on network traffic
+For development, use ```localhost``` or ```127.0.0.1``` as the node host name or IP address. Us the following filter for WireShark, where 1971 is an example of the control plane port and 1972 is an example of the data plane port serviced by the node "server":
+```bash
+tcp.port == 1971 || tcp.port == 1972
+```
