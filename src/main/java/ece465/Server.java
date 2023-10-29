@@ -6,6 +6,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 public class Server extends Protocol implements Runnable {
 
@@ -14,12 +17,15 @@ public class Server extends Protocol implements Runnable {
     protected ServerSocket cPlaneSsocket;
     protected ServerSocket dPlaneSsocket;
 
+    protected BlockingQueue<String> queue;
+
     protected List<cPlaneRunnable> serverThreadList;
     protected boolean listening;
     public Server() {
         super();
         this.serverThreadList = Collections.synchronizedList(new ArrayList<cPlaneRunnable>());
         this.monitorServer = new MonitorServer(this);
+        this.queue = new LinkedBlockingDeque<String>();
         System.out.println(Protocol.SERVER_HEADER);
     }
 
@@ -31,15 +37,25 @@ public class Server extends Protocol implements Runnable {
         this.dPlaneSsocket = new ServerSocket(this.getDataPort());
     }
 
+    public void putToQ(String s) {
+        System.out.println(s);
+        try {
+            this.queue.put(s);
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+            System.err.println("Could not put() " + s);
+        }
+    }
+
     @Override
-    public String getHostname() {
+    public String getServerHostname() {
         try {
             InetAddress addr = InetAddress.getLocalHost();
-            super.setHostname(addr.getHostName());
+            super.setServerHostname(addr.getHostName());
         } catch (UnknownHostException ex) {
             ex.printStackTrace(System.err);
         }
-        return (super.getHostname());
+        return (super.getServerHostname());
     }
 
     /**
@@ -82,6 +98,10 @@ public class Server extends Protocol implements Runnable {
         return this.listening;
     }
 
+    protected void setListening(boolean l) {
+        this.listening = l;
+    }
+
     /**
      * method to process the commands received from Client
      * <p>
@@ -104,6 +124,15 @@ public class Server extends Protocol implements Runnable {
             case "VERSION":
                 this.printState();
                 textSendToClient = String.format("%s %s",peerAction, object); // version set in Protocol
+                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+                cout.println(textSendToClient);
+                cout.flush();
+                this.setCurrentState(STATE.READY);
+                this.printState();
+                break;
+            case "LIST":
+                this.printState();
+                textSendToClient = String.format("%s %s",peerAction, object); // commands set in Protocol
                 System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 cout.println(textSendToClient);
                 cout.flush();
@@ -139,10 +168,11 @@ public class Server extends Protocol implements Runnable {
             case "DISCONNECT": // DISCONNECT
                 this.printState();
                 this.setCurrentState(STATE.DISCONNECTING);
-                this.printState();
-                System.out.println("executeInstruction() DISCONNECT");
-                cout.println("DISCONNECTING");
+                textSendToClient = String.format("%s %s",peerAction, object); // commands set in Protocol
+                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+                cout.println(textSendToClient);
                 cout.flush();
+                this.printState();
                 break;
             case "RECEIVE": // RECEIVE object (is filename)
                 this.printState();
@@ -164,6 +194,7 @@ public class Server extends Protocol implements Runnable {
                     this.setCurrentState(STATE.RECEIVING);
                     System.out.println("executeInstruction() receiving file " + object);
                     Protocol.receiveFile(object, in);
+                    this.putToQ(object); // TODO add the filename to a list with fully qualified name
                     System.out.println("executeInstruction() finished receiving file " + object);
                 } catch (FileNotFoundException ex) {
                     System.err.println("caught FileNotFoundException in executeInstruction()");
@@ -215,9 +246,6 @@ public class Server extends Protocol implements Runnable {
                 break;
         }
     }
-    protected void setListening(boolean l) {
-        this.listening = l;
-    }
 
     /**
      * method to start and run the actual thread for the Server that a Client thread connects to over network
@@ -240,7 +268,7 @@ public class Server extends Protocol implements Runnable {
                 boolean added = this.addControlRunnable(cPlane);
                 Thread cThread = new Thread(cPlane);
                 cThread.start();
-                System.out.println("spawned a server CONTROL plane thread to handle a new client " + socket.toString());
+                System.out.println("spawned a server CONTROL plane thread to handle a new client " + cPlane.getClientName());
             }
             monitorServerThread.join();
             System.out.printf("MONITORING THREAD (%s) terminated\n", monitorServerThread.toString());
@@ -263,18 +291,38 @@ public class Server extends Protocol implements Runnable {
     protected class cPlaneRunnable implements Runnable, AutoCloseable {
         protected Server server;
         protected Socket socket;
+        protected String clientName;
 
         protected cPlaneRunnable(Server ss, Socket s) {
 //            super("cPlaneThread");
             System.out.printf("Created cPlaneRunnable = %s\n",s.toString());
             this.server = ss;
             this.socket = s;
+            this.setClientName();
+        }
+
+        public String getClientName() {
+            return(this.clientName);
+        }
+
+        protected void setClientName() {
+            String name = null;
+            try {
+                name = Utils.generateUniqueName(socket);
+            } catch (IOException ex) {
+                System.err.println("Unable to get socket information to get hostname and IP address:");
+                ex.printStackTrace(System.err);
+                name = "UNKNOWN";
+            }
+            this.clientName = name;
         }
 
         @Override
         public String toString() {
-            return(String.format("%s: server = %s, socket = %s\n",
-                    super.toString(),this.server.toString(), this.socket.toString()));
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("Connected to client = %s\n", this.clientName));
+            sb.append(String.format("\t%s: server = %s, socket = %s\n", super.toString(),this.server.toString(), this.socket.toString()));
+            return(sb.toString());
         }
 
         @Override
@@ -294,7 +342,7 @@ public class Server extends Protocol implements Runnable {
                 Map<String, String> instruction = null;
                 cout.println("Connected to " + Protocol.SERVER_HEADER);
                 cout.flush();
-                while (!Thread.currentThread().isInterrupted()) {
+//                while (!Thread.currentThread().isInterrupted()) {
                     while (!this.socket.isClosed() && ( (inputLine = in.readLine()) != null) ) {
                         System.out.println("CLIENT-> " + inputLine + " from " + socket.toString());
                         System.out.println(server.getCurrentState());
@@ -303,6 +351,14 @@ public class Server extends Protocol implements Runnable {
                         this.server.executeInstruction(instruction, cout);
                         System.out.println(this.server.getCurrentState());
                         switch (this.server.getCurrentState()) {
+//                            case Protocol.STATE.NAMING:
+//                                if (instruction.get("my-action").equalsIgnoreCase("NAME")) {
+//                                    if (instruction.get("object") != null) {
+//                                        this.setClientName(instruction.get("object"));
+//                                    }
+//                                    System.out.printf("New client registered as %s\n", this.getClientName());
+//                                }
+//                                break;
                             case Protocol.STATE.DISCONNECTING:
                                 socket.close();
                                 this.server.removeControlRunnable(this);
@@ -317,7 +373,7 @@ public class Server extends Protocol implements Runnable {
                         }
                         System.out.println(server.getCurrentState());
                     }
-                }
+//                }
                 System.out.println("closing socket " + socket.toString());
                 socket.close();
 //            } catch (IOException | InterruptedException e) {

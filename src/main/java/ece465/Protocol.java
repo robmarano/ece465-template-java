@@ -16,12 +16,13 @@ public abstract class Protocol {
 
     public static int DEFAULT_CHUNK_SIZE = 4 * 1024; // 4kB chunk size of files over network
 
-    protected String hostname;
+    protected String serverHostname;
+    protected String myUniqueName;
     protected int controlPort;
     protected int dataPort;
 
     public enum STATE {
-        READY, PENDING, ACTIVE, DONE, FAIL, RETRY, SENDING, RECEIVING, DISCONNECTING, EXITING
+        READY, PENDING, ACTIVE, DONE, FAIL, RETRY, SENDING, RECEIVING, DISCONNECTING, EXITING, NAMING
     }; // IDLE
 
     public enum CLIENT_EXIT_CODES {
@@ -29,7 +30,7 @@ public abstract class Protocol {
     };
 
     public final static String[] COMMANDS = {
-      "VERSION", "COMMANDS", "SEND", "GET", "BYE", "SHUTDOWN"
+      "VERSION", "COMMANDS", "SEND", "GET", "BYE", "SHUTDOWN", "LIST"
     };
 
     protected STATE currentState;
@@ -37,6 +38,7 @@ public abstract class Protocol {
     public Protocol() {
         super();
         this.setCurrentState(STATE.PENDING);
+        this.myUniqueName = "UNKNOWN";
     }
 
     public Protocol(STATE s) {
@@ -72,13 +74,16 @@ public abstract class Protocol {
         return(this.dataPort);
     }
 
-    public String getHostname() {
-        return(this.hostname);
+    public String getServerHostname() {
+        return(this.serverHostname);
     }
 
-    public void setHostname(String h) {
-        this.hostname = h;
+    protected void setServerHostname(String h) { this.serverHostname = h; }
+    public String getMyUniqueName() {
+        return(this.myUniqueName);
     }
+
+    protected void setMyUniqueName(String h) { this.myUniqueName = h; }
 
     public static boolean isValidCommand(String userInput) {
         boolean isValid = false;
@@ -183,11 +188,32 @@ public abstract class Protocol {
                     instruction.put("object", Protocol.VERSION);
                     newState = STATE.READY;
                     break;
+                case "LIST":
+                    instruction.put("my-action", "LIST");
+                    instruction.put("peer-action", "LIST");
+                    instruction.put("object","null");
+                    newState = STATE.READY;
+                    break;
                 case "COMMANDS":
                     instruction.put("my-action", "COMMANDS");
                     instruction.put("peer-action", "COMMANDS");
                     instruction.put("object", Arrays.toString(Protocol.COMMANDS));
                     newState = STATE.READY;
+                    break;
+                case "NAME":
+                    instruction.put("my-action", "NAME");
+                    instruction.put("peer-action", "NAME");
+                    if (event.length > 1) {
+                        instruction.put("my-action", "NAME");
+                        instruction.put("peer-action", "NAME");
+                        instruction.put("object", event[1]);
+                        newState = STATE.NAMING;
+                    } else {
+                        instruction.put("my-action", "IGNORE");
+                        instruction.put("peer-action", "ERROR");
+                        instruction.put("object", "MISSING client network name");
+                        newState = STATE.READY;
+                    }
                     break;
                 case "SHUTDOWN":
                     instruction.put("my-action", "SHUTDOWN");

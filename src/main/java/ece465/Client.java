@@ -1,5 +1,7 @@
 package ece465;
 
+import jdk.jshell.execution.Util;
+
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -20,12 +22,26 @@ public class Client extends Protocol implements Runnable {
         this.exitCode = code;
     }
 
-    public Client(String hostName, int cport, int dport) {
+    public Client(String serverHostName, int cport, int dport) {
         this();
-        this.setHostname(hostName);
+        this.setServerHostname(serverHostName);
         this.setControlPort(cport);
         this.setDataPort(dport);
         this.setCurrentState(Protocol.STATE.READY);
+    }
+
+    protected void setMyUniqueName(final Socket socket) {
+        String name = null;
+        if (super.getMyUniqueName().equalsIgnoreCase("UNKNOWN")) {
+            try {
+                name = Utils.generateUniqueName(socket);
+            } catch (IOException ex) {
+                System.err.println("Unable to get socket information to get hostname and IP address:");
+                ex.printStackTrace(System.err);
+                name = "UNKNOWN";
+            }
+        }
+        super.setMyUniqueName(name);
     }
 
     protected void sendCommandToServer(PrintWriter cout, String fromUser) {
@@ -46,7 +62,7 @@ public class Client extends Protocol implements Runnable {
     @Override
     public void run() {
         System.out.printf("Connecting initial state (%s) to %s: control (%d) and data (%d) ports.\n",
-                getCurrentState().toString(), getHostname(), getControlPort(), getDataPort());
+                getCurrentState().toString(), getServerHostname(), getControlPort(), getDataPort());
         try
         (
             // setup control plane with server
@@ -54,7 +70,7 @@ public class Client extends Protocol implements Runnable {
             // when there is something to move back and forth over network,
             // the originator starts up a data channel, sends the port from which to receive,
             // as well as what is requested
-            Socket cSocket = new Socket(super.getHostname(), getControlPort());
+            Socket cSocket = new Socket(super.getServerHostname(), getControlPort());
             PrintWriter cout = new PrintWriter(cSocket.getOutputStream(), true);
             BufferedReader cin = new BufferedReader(new InputStreamReader(cSocket.getInputStream()));
             BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
@@ -63,11 +79,12 @@ public class Client extends Protocol implements Runnable {
 //            BufferedReader din = new BufferedReader(new InputStreamReader(dSocket.getInputStream()));
 //            DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(dSocket.getOutputStream()));
         ) {
+            setMyUniqueName(cSocket);
+            System.out.printf("\t client unique name = %s\n", getMyUniqueName());
             // Sending commands over control plane
             String fromServer;
             String fromUser;
-            while (cSocket.isConnected() &&
-                    (fromServer = this.getCommandFromServer(cin)) != null) {
+            while (cSocket.isConnected() && (fromServer = this.getCommandFromServer(cin)) != null) {
                 System.out.printf("fromServer = %s\n", fromServer);
                 String[] event = fromServer.split(" ");
                 String action = event[0].toUpperCase();
@@ -86,13 +103,21 @@ public class Client extends Protocol implements Runnable {
                     System.out.println(object);
                 } else if (action.equalsIgnoreCase("COMMANDS")) {
                     StringBuilder sb = new StringBuilder();
-                    for (int i=1; i < event.length; i++) {
-                        sb.append(event[i].replaceAll("[\\[\\]]",""));
-                        if (i < event.length-1) {
+                    for (int i = 1; i < event.length; i++) {
+                        sb.append(event[i].replaceAll("[\\[\\]]", ""));
+                        if (i < event.length - 1) {
                             sb.append(" ");
                         }
                     }
-                    System.out.printf("%s\n",sb.toString());
+                    System.out.printf("%s\n", sb.toString());
+                    this.setCurrentState(STATE.READY);
+                    this.printState();
+                    System.out.println(object);
+                } else if (action.equalsIgnoreCase("NAME")) {
+                    System.out.printf("This client registered with Server as %s\n", event[1]); // or object
+                    this.setCurrentState(STATE.READY);
+                    this.printState();
+                } else if (action.equalsIgnoreCase("LIST")) {
                     this.setCurrentState(STATE.READY);
                     this.printState();
                     System.out.println(object);
@@ -100,16 +125,16 @@ public class Client extends Protocol implements Runnable {
                     System.out.println("run()  RECEIVE:");
                     this.printState();
                     try (
-                            Socket dSocket = new Socket(getHostname(), getDataPort());
+                            Socket dSocket = new Socket(getServerHostname(), getDataPort());
                             InputStream in = dSocket.getInputStream();
                     ) {
-                        System.out.printf("opened data socket %s\n",dSocket.toString());
-                        System.out.printf("\tinput stream = %s\n",in.toString());
+                        System.out.printf("opened data socket %s\n", dSocket.toString());
+                        System.out.printf("\tinput stream = %s\n", in.toString());
                         if (object != null) {
                             this.setCurrentState(STATE.RECEIVING);
                             this.printState();
                             Protocol.receiveFile(object, in);  // TODO check if need to do binary or not
-                            System.out.printf("Received file %s\n",object);
+                            System.out.printf("Received file %s\n", object);
                             this.setCurrentState(STATE.READY);
                             this.printState();
                         }
@@ -129,14 +154,14 @@ public class Client extends Protocol implements Runnable {
                 } else if (action.equalsIgnoreCase("SEND")) {
                     this.printState();
                     try (
-                            Socket dSocket = new Socket(getHostname(), getDataPort());
+                            Socket dSocket = new Socket(getServerHostname(), getDataPort());
                             OutputStream out = dSocket.getOutputStream();
                     ) {
                         if (object != null) {
                             this.setCurrentState(STATE.SENDING);
                             this.printState();
                             Protocol.sendFile(object, out); // TODO check if need to do binary or not
-                            System.out.printf("Sent file %s\n",object);
+                            System.out.printf("Sent file %s\n", object);
                             this.setCurrentState(STATE.READY);
                             this.printState();
                         }
@@ -168,14 +193,17 @@ public class Client extends Protocol implements Runnable {
                     this.setCurrentState(STATE.EXITING);
                     this.printState();
                     break;
-                } else if (fromServer.startsWith("Connected to")) {
+                } else if (fromServer.startsWith("Connected to")) { // initial comms exchange, so register name
                     System.out.println(fromServer);
+//                    String initialCmd = String.format("NAME %s", this.getMyUniqueName());
+//                    this.sendCommandToServer(cout, initialCmd);
                 } else {
                     System.out.printf("DID NOT UNDERSTAND server statement: %s\n", fromServer);
                     this.printState();
                     this.setCurrentState(STATE.READY);
                     this.printState();
                 }
+                // since did not understand, skip and ask client to send another commmand
                 if (cSocket.isConnected()) {
                     fromUser = Protocol.getInputFromUser(stdIn, "> ");
                     this.sendCommandToServer(cout, fromUser);
@@ -185,9 +213,9 @@ public class Client extends Protocol implements Runnable {
         } catch (FileNotFoundException e) {
             System.err.println("Couldn't get file to send ");
         } catch (UnknownHostException e) {
-            System.err.println("Don't know about host " + getHostname());
+            System.err.println("Don't know about host " + getServerHostname());
         } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " + getHostname());
+            System.err.println("Couldn't get I/O for the connection to " + getServerHostname());
         }
         System.out.println("Exiting Client");
     }
