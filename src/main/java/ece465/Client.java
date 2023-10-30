@@ -7,18 +7,27 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Client extends Protocol implements Runnable {
-    protected Protocol.CLIENT_EXIT_CODES exitCode;
+    protected Protocol.PROGRAM_EXIT_CODES exitCode;
+    protected final String pidFileName;
+
     public Client() {
         super();
+        this.pidFileName = String.format("%s.pid", this.getClass().getName());
+        try {
+            writePidToLocalFile(pidFileName);
+        } catch (IOException ex) {
+            System.err.println("Unable to write the PID file:");
+            ex.printStackTrace(System.err);
+        }
         System.out.println(Protocol.CLIENT_HEADER);
-        this.setExitCode(CLIENT_EXIT_CODES.Success);
+        this.setExitCode(PROGRAM_EXIT_CODES.Success);
     }
 
-    public synchronized Protocol.CLIENT_EXIT_CODES getExitCode() {
+    public synchronized Protocol.PROGRAM_EXIT_CODES getExitCode() {
         return (this.exitCode);
     }
 
-    protected synchronized void setExitCode(Protocol.CLIENT_EXIT_CODES code) {
+    protected synchronized void setExitCode(Protocol.PROGRAM_EXIT_CODES code) {
         this.exitCode = code;
     }
 
@@ -231,11 +240,11 @@ public class Client extends Protocol implements Runnable {
 //            ex1.printStackTrace(System.err);
 //            System.err.println("Experienced an IOException. Exiting Client program with error.");
         } catch (InterruptedException ex2) {
-            this.setExitCode(CLIENT_EXIT_CODES.InterruptedException);
+            this.setExitCode(PROGRAM_EXIT_CODES.InterruptedException);
             ex2.printStackTrace(System.err);
             System.err.println("Experienced an InterruptedException. Exiting Client program with error.");
         } finally {
-            this.setExitCode(CLIENT_EXIT_CODES.Success);
+            this.setExitCode(PROGRAM_EXIT_CODES.Success);
             System.out.println("Successfully exiting Client program.");
         }
     }
@@ -257,7 +266,7 @@ public class Client extends Protocol implements Runnable {
             } catch (NumberFormatException ex) {
                 ex.printStackTrace(System.err);
                 System.err.println("You did not provide an acceptable port number. Check your characters.");
-                System.exit(Protocol.CLIENT_EXIT_CODES.NumberFormatException.ordinal());
+                System.exit(Protocol.PROGRAM_EXIT_CODES.NumberFormatException.ordinal());
             }
         }
         Client iClient = new Client(hostName, cport, dport);

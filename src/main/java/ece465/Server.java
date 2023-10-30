@@ -1,16 +1,16 @@
 package ece465;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 public class Server extends Protocol implements Runnable {
+
+    protected Protocol.PROGRAM_EXIT_CODES exitCode;
+    protected final String pidFileName;
 
     MonitorServer monitorServer;
     Thread monitorServerThread;
@@ -21,8 +21,17 @@ public class Server extends Protocol implements Runnable {
 
     protected List<cPlaneRunnable> serverThreadList;
     protected boolean listening;
+    protected boolean shutdown;
     public Server() {
         super();
+        this.pidFileName = String.format("%s.pid", this.getClass().getName());
+        try {
+            writePidToLocalFile(this.pidFileName);
+        } catch (IOException ex) {
+            System.err.println("Unable to write the PID file:");
+            ex.printStackTrace(System.err);
+        }
+        this.shutdown = false;
         this.serverThreadList = Collections.synchronizedList(new ArrayList<cPlaneRunnable>());
         this.monitorServer = new MonitorServer(this);
         this.queue = new LinkedBlockingDeque<String>();
@@ -58,17 +67,27 @@ public class Server extends Protocol implements Runnable {
         return (super.getServerHostname());
     }
 
+    protected boolean getShutdown() {
+        return(this.shutdown);
+    }
+
+    synchronized protected void setShutdown(boolean s) {
+        this.shutdown = s;
+    }
+
     /**
-     * method to add a control plane runnable from Server instance's record
+     * method to add a control plane runnable to Server instance's record
+     * identifier/key will be the cplane's client name.
      * <p>
-     * @param  cpRunnable  running cPlaneRunnable that is now being served by Server
-     * @return      boolean if successfully added
-     * @see         cPlaneRunnable
+     * @param cpRunnable running cPlaneRunnable that is added now
+     * @see cPlaneRunnable
      */
     synchronized protected boolean addControlRunnable(cPlaneRunnable cpRunnable) {
         boolean added = false;
         System.out.printf("\tADDING (%b) cPlaneRunnable = %s\n", added, cpRunnable.toString());
-        added = this.serverThreadList.add(cpRunnable);
+        synchronized (this.serverThreadList) {
+            added = this.serverThreadList.add(cpRunnable);
+        }
         System.out.printf("\t\tADDING (%b) cPlaneRunnable = %s\n", added, cpRunnable.toString());
         return(added);
     }
@@ -82,9 +101,11 @@ public class Server extends Protocol implements Runnable {
      */
     synchronized protected boolean removeControlRunnable(cPlaneRunnable cpRunnable) {
         boolean removed = false;
-        System.out.printf("\tREMOVING cPlaneRunnable = %s\n",cpRunnable.toString());
-        removed = this.serverThreadList.remove(cpRunnable);
-        System.out.printf("\t\tREMOVED cPlaneRunnable = %s\n",cpRunnable.toString());
+//        System.out.printf("\tREMOVING cPlaneRunnable = %s\n",cpRunnable.toString());
+        synchronized (this.serverThreadList) {
+            removed = this.serverThreadList.remove(cpRunnable);
+        }
+//        System.out.printf("\t\tREMOVED cPlaneRunnable = %s\n",cpRunnable.toString());
         return(removed);
     }
 
@@ -112,90 +133,92 @@ public class Server extends Protocol implements Runnable {
      * @see         Client
      */
     protected void executeInstruction(Map<String, String> instruction, PrintWriter cout) {
-        System.out.println("executeInstruction( " + instruction.toString() + " " + cout.toString());
-        System.out.println(instruction.toString());
-        this.printState();
+//        System.out.println("executeInstruction( " + instruction.toString() + " " + cout.toString());
+//        System.out.println(instruction.toString());
+//        this.printState();
         String myAction = instruction.get("my-action");
         String peerAction = instruction.get("peer-action");
         String object = instruction.get("object");
         String textSendToClient = null;
 
         switch(myAction) {
+            case "VER":
             case "VERSION":
-                this.printState();
+//                this.printState();
                 textSendToClient = String.format("%s %s",peerAction, object); // version set in Protocol
-                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+//                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 cout.println(textSendToClient);
                 cout.flush();
                 this.setCurrentState(STATE.READY);
-                this.printState();
+//                this.printState();
                 break;
             case "LIST":
-                this.printState();
+//                this.printState();
                 textSendToClient = String.format("%s %s",peerAction, object); // commands set in Protocol
-                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+//                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 cout.println(textSendToClient);
                 cout.flush();
                 this.setCurrentState(STATE.READY);
-                this.printState();
+//                this.printState();
                 break;
             case "COMMANDS":
-                this.printState();
+//                this.printState();
                 textSendToClient = String.format("%s %s",peerAction, object); // commands set in Protocol
-                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+//                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 cout.println(textSendToClient);
                 cout.flush();
                 this.setCurrentState(STATE.READY);
-                this.printState();
+//                this.printState();
                 break;
             case "SHUTDOWN":
-                this.printState();
+//                this.printState();
                 textSendToClient = String.format("%s %s",peerAction, object); // Shutdown
                 System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 cout.println(textSendToClient);
                 cout.flush();
                 this.setCurrentState(STATE.EXITING);
                 this.printState();
+                this.setShutdown(true);
                 break;
             case "HELO": //HELO
-                this.printState();
+//                this.printState();
                 this.setCurrentState(STATE.READY);
-                this.printState();
-                System.out.println("executeInstruction() HELO");
+//                this.printState();
+//                System.out.println("executeInstruction() HELO");
                 cout.println("HELO");
                 cout.flush();
                 break;
             case "DISCONNECT": // DISCONNECT
-                this.printState();
+//                this.printState();
                 this.setCurrentState(STATE.DISCONNECTING);
                 textSendToClient = String.format("%s %s",peerAction, object); // commands set in Protocol
-                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+//                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 cout.println(textSendToClient);
                 cout.flush();
-                this.printState();
+//                this.printState();
                 break;
             case "RECEIVE": // RECEIVE object (is filename)
-                this.printState();
+//                this.printState();
                 this.setCurrentState(STATE.RECEIVING);
-                this.printState();
-                System.out.println("executeInstruction() RECEIVE");
+//                this.printState();
+//                System.out.println("executeInstruction() RECEIVE");
                 textSendToClient = String.format("%s %s",peerAction, object); // RECEIVE
                 cout.println(textSendToClient);
                 cout.flush();
-                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+//                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 try (
                     // input is the data plane
                     Socket dSocket = dPlaneSsocket.accept();
                     InputStream in = dSocket.getInputStream();
                 ) {
-                    System.out.printf("\tdSocket = %s\n", dSocket.toString());
-                    System.out.printf("\tin = %s\n", in.toString());
-                    this.printState();
+//                    System.out.printf("\tdSocket = %s\n", dSocket.toString());
+//                    System.out.printf("\tin = %s\n", in.toString());
+//                    this.printState();
                     this.setCurrentState(STATE.RECEIVING);
-                    System.out.println("executeInstruction() receiving file " + object);
+//                    System.out.println("executeInstruction() receiving file " + object);
                     Protocol.receiveFile(object, in);
                     this.putToQ(object); // TODO add the filename to a list with fully qualified name
-                    System.out.println("executeInstruction() finished receiving file " + object);
+//                    System.out.println("executeInstruction() finished receiving file " + object);
                 } catch (FileNotFoundException ex) {
                     System.err.println("caught FileNotFoundException in executeInstruction()");
                     ex.printStackTrace(System.err);
@@ -204,28 +227,28 @@ public class Server extends Protocol implements Runnable {
                     ex.printStackTrace(System.err);
                 }
                 this.setCurrentState(STATE.READY);
-                this.printState();
+//                this.printState();
                 break;
             case "SEND": // SEND object (is filename)
-                this.printState();
+//                this.printState();
                 this.setCurrentState(STATE.SENDING);
-                this.printState();
-                System.out.println("executeInstruction() SENDING");
+//                this.printState();
+//                System.out.println("executeInstruction() SENDING");
                 textSendToClient = String.format("%s %s",peerAction, object); // RECEIVE
                 cout.println(textSendToClient);
                 cout.flush();
-                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
+//                System.out.printf("executeInstruction() -> Client: %s\n", textSendToClient);
                 try (
                     Socket dSocket = dPlaneSsocket.accept();
                     OutputStream out = dSocket.getOutputStream();
                 ) {
-                    System.out.printf("\tdSocket = %s\n", dSocket.toString());
-                    System.out.printf("\tout = %s\n", out.toString());
-                    this.printState();
+//                    System.out.printf("\tdSocket = %s\n", dSocket.toString());
+//                    System.out.printf("\tout = %s\n", out.toString());
+//                    this.printState();
                     this.setCurrentState(STATE.SENDING);
-                    System.out.println("executeInstruction() sending file " + object);
+//                    System.out.println("executeInstruction() sending file " + object);
                     Protocol.sendFile(object, out);
-                    System.out.println("executeInstruction() finished sending file " + object);
+//                    System.out.println("executeInstruction() finished sending file " + object);
                 } catch (FileNotFoundException ex) {
                     System.err.println("caught FileNotFoundException");
                     ex.printStackTrace(System.err);
@@ -237,10 +260,10 @@ public class Server extends Protocol implements Runnable {
                     ex.printStackTrace(System.err);
                 }
                 this.setCurrentState(STATE.READY);
-                this.printState();
+//                this.printState();
                 break;
             default:
-                System.out.println("executeInstruction() NOOP");
+//                System.out.println("executeInstruction() NOOP");
                 this.setCurrentState(STATE.READY);
                 cout.flush();
                 break;
@@ -259,27 +282,31 @@ public class Server extends Protocol implements Runnable {
         try {
             System.out.println("Starting Monitor Thread ...");
             monitorServerThread = new Thread(monitorServer);
+            monitorServerThread.setName("Monitor-Thread");
             monitorServerThread.start();
             System.out.printf("Monitor Thread started as %s\n", monitorServerThread.toString());
-            while (this.isListening()) {
-                System.out.println("Listening for Client CONTROL connections ...");
+            while (!Thread.currentThread().isInterrupted()) {
+//                System.out.println("Listening for Client CONTROL connections ...");
                 Socket socket = cPlaneSsocket.accept();
-                Server.cPlaneRunnable cPlane = new Server.cPlaneRunnable(this, socket);
+                Server.cPlaneRunnable cPlane = new cPlaneRunnable(this, socket);
                 boolean added = this.addControlRunnable(cPlane);
+//                System.out.println("cPlane thread start: added thread = " + added);
                 Thread cThread = new Thread(cPlane);
+                cThread.setName(cPlane.getClientName());
                 cThread.start();
-                System.out.println("spawned a server CONTROL plane thread to handle a new client " + cPlane.getClientName());
+                System.out.printf("spawned a server CONTROL plane thread to handle a new client in thread %s\n", cThread.getName());
             }
             monitorServerThread.join();
-            System.out.printf("MONITORING THREAD (%s) terminated\n", monitorServerThread.toString());
-        } catch (IOException ex1) {
-            ex1.printStackTrace(System.err);
-            System.err.println("Experienced an IOException. Exiting Server program with error.");
-        } catch (InterruptedException ex2) {
-            ex2.printStackTrace(System.err);
+//            System.out.printf("MONITORING THREAD (%s) terminated\n", monitorServerThread.toString());
+        } catch (InterruptedException ex) {
             System.err.println("Experienced an InterruptedException. Exiting Server program with error.");
-        } finally {
-
+            ex.printStackTrace(System.err);
+        } catch (SocketException ex) {
+            System.err.println("Experienced a SocketException. Exiting Server program with error.");
+            ex.printStackTrace(System.err);
+        } catch (IOException ex) {
+            System.err.println("Experienced an IOException. Exiting Server program with error.");
+            ex.printStackTrace(System.err);
         }
     }
 
@@ -288,14 +315,14 @@ public class Server extends Protocol implements Runnable {
      * @version 0.1
      * @since 0.1
      */
-    protected class cPlaneRunnable implements Runnable, AutoCloseable {
+    protected static class cPlaneRunnable implements Runnable, AutoCloseable {
         protected Server server;
         protected Socket socket;
         protected String clientName;
 
         protected cPlaneRunnable(Server ss, Socket s) {
 //            super("cPlaneThread");
-            System.out.printf("Created cPlaneRunnable = %s\n",s.toString());
+//            System.out.printf("Created cPlaneRunnable = %s\n",s.toString());
             this.server = ss;
             this.socket = s;
             this.setClientName();
@@ -331,25 +358,25 @@ public class Server extends Protocol implements Runnable {
         }
 
         public void run() {
-            System.out.println("cThread run()");
+//            System.out.println("cThread run()");
             try (
                     PrintWriter cout = new PrintWriter(socket.getOutputStream(), true);
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 ) {
-                System.out.printf("\t%s: output stream = %s\n", this.toString(), cout.toString());
-                System.out.printf("\t%s: input stream = %s\n", this.toString(), in.toString());
+//                System.out.printf("\t%s: output stream = %s\n", this.toString(), cout.toString());
+//                System.out.printf("\t%s: input stream = %s\n", this.toString(), in.toString());
                 String inputLine, outputLine;
                 Map<String, String> instruction = null;
                 cout.println("Connected to " + Protocol.SERVER_HEADER);
                 cout.flush();
 //                while (!Thread.currentThread().isInterrupted()) {
-                    while (!this.socket.isClosed() && ( (inputLine = in.readLine()) != null) ) {
-                        System.out.println("CLIENT-> " + inputLine + " from " + socket.toString());
-                        System.out.println(server.getCurrentState());
+                    while (!this.socket.isClosed() && !this.server.getShutdown() && ( (inputLine = in.readLine()) != null) ) {
+//                        System.out.println("CLIENT-> " + inputLine + " from " + socket.toString());
+//                        System.out.println(server.getCurrentState());
                         instruction = this.server.getNextState(inputLine);
-                        System.out.println(this.server.getCurrentState());
+//                        System.out.println(this.server.getCurrentState());
                         this.server.executeInstruction(instruction, cout);
-                        System.out.println(this.server.getCurrentState());
+//                        System.out.println(this.server.getCurrentState());
                         switch (this.server.getCurrentState()) {
 //                            case Protocol.STATE.NAMING:
 //                                if (instruction.get("my-action").equalsIgnoreCase("NAME")) {
@@ -364,24 +391,33 @@ public class Server extends Protocol implements Runnable {
                                 this.server.removeControlRunnable(this);
                                 this.server.setCurrentState(Protocol.STATE.DONE);
                                 break;
-                            case STATE.EXITING:
-                                socket.close();
+                            case Protocol.STATE.EXITING:
                                 System.out.println("DANGER DANGER DANGER - exiting from Server through a cPlaneRunnable");
-                                System.exit(0); // VERY DANGEROUS - BRUTE FORCE EXIT.
+                                socket.close();
+                                this.server.setShutdown(true);
+//                                System.exit(0); // TODO: VERY DANGEROUS - BRUTE FORCE EXIT. Improve this!!!
+                                break;
                             default:
                                 break;
                         }
-                        System.out.println(server.getCurrentState());
+//                        System.out.println(server.getCurrentState());
                     }
 //                }
-                System.out.println("closing socket " + socket.toString());
-                socket.close();
-//            } catch (IOException | InterruptedException e) {
+//                System.out.println("closing socket " + socket.toString());
+                if (!socket.isClosed()) {
+                    socket.close();
+                }
             } catch (IOException e) {
-                System.err.println(server.getCurrentState());
+                System.err.println("Experienced an IOException.");
+                System.err.printf("Server State = %s\n",server.getCurrentState());
+                e.printStackTrace(System.err);
+            } catch (Exception e) {
+                System.err.println("Experienced a general Exception.");
+                System.err.printf("Server State = %s\n",server.getCurrentState());
                 e.printStackTrace(System.err);
             }
-            boolean removedCThread = server.serverThreadList.remove(this);
+//            boolean removedCThread = server.serverThreadList.remove(this);
+            boolean removedCThread = server.removeControlRunnable(this);
             System.out.println("cPlane thread end: removed thread = "+removedCThread);
         }
     }
@@ -400,26 +436,31 @@ public class Server extends Protocol implements Runnable {
         }
 
         protected void pruneCplanes() {
-            System.out.println("PRUNING cPlaneRunnables if their sockets are closed");
+//            System.out.println("PRUNING cPlaneRunnables if their sockets are closed");
             for (cPlaneRunnable cpRunnable : this.iServer.serverThreadList) {
                 if (! cpRunnable.socket.isConnected()) {
                     this.iServer.removeControlRunnable(cpRunnable);
-                    System.out.printf("\tDELETING (%s):%s\n", cpRunnable.socket.toString(),cpRunnable.toString());
+                    System.out.printf("\tDELETING (%s):%s\n", cpRunnable.socket.toString(),cpRunnable.getClientName());
                 }
             }
         }
 
         @Override
         public void run() {
-            while (!Thread.currentThread().isInterrupted()) {
-                System.out.print(serverThreadList.size());
-                System.out.print(" " + serverThreadList.toString());
-                this.pruneCplanes();
-                try {
+            try {
+                while(!Thread.currentThread().isInterrupted()) {
+                    System.out.printf("shutdown=%b\n",iServer.getShutdown());
                     Thread.sleep(Protocol.DEFAULT_SLEEP_TIME_CHECK_SHUTDOWN);
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
+                    System.out.print(serverThreadList.size());
+//                        System.out.print(" " + serverThreadList.toString());
+                    this.pruneCplanes();
+                    if (iServer.getShutdown()) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+            } catch (InterruptedException ex) {
+                System.err.printf("MonitorThread interrupted - %s\n", Thread.currentThread().getName());
+                ex.printStackTrace();
             }
         }
     }
@@ -456,11 +497,25 @@ public class Server extends Protocol implements Runnable {
             Server iServer = new Server(cport, dport);
             System.out.printf("SERVER instance = %s\n",iServer.toString());
             Thread serverThread = new Thread(iServer);
+            serverThread.setName("MAIN server thread");
             System.out.printf("SERVER THREAD instance = %s\n",serverThread.toString());
             serverThread.start();
             System.out.println("\tstarted SERVER THREAD instance.");
-            serverThread.join();
-            System.out.println("SERVER THREAD terminated");
+
+            // Walk up all the way to the root thread group
+            ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
+            ThreadGroup parent;
+            while ((parent = rootGroup.getParent()) != null) {
+                rootGroup = parent;
+            }
+
+            while(!Thread.currentThread().isInterrupted()) {
+                listThreads(rootGroup, "");
+                Thread.sleep(Protocol.DEFAULT_SLEEP_TIME_CHECK_SHUTDOWN);
+
+            }
+            //            serverThread.join();
+//            System.out.println("SERVER THREAD terminated");
         } catch (IOException ex1) {
             exitCode = -2;
             ex1.printStackTrace(System.err);
@@ -474,5 +529,31 @@ public class Server extends Protocol implements Runnable {
         }
         System.out.printf("EXITING server mainline with exit code = %d\n",exitCode);
         System.exit(exitCode);
+    }
+
+    // List all threads and recursively list all subgroup
+    public static void listThreads(ThreadGroup group, String indent) {
+        System.out.println("------------------------------------------------------------------------");
+        System.out.println(indent + "Group[" + group.getName() +
+                ":" + group.getClass()+"]");
+        int nt = group.activeCount();
+        Thread[] threads = new Thread[nt*2 + 10]; //nt is not accurate
+        nt = group.enumerate(threads, false);
+
+        // List every thread in the group
+        for (int i=0; i<nt; i++) {
+            Thread t = threads[i];
+            System.out.println(indent + "  Thread[" + t.getName()
+                    + ":" + t.getClass() + "]");
+        }
+
+        // Recursively list all subgroups
+        int ng = group.activeGroupCount();
+        ThreadGroup[] groups = new ThreadGroup[ng*2 + 10];
+        ng = group.enumerate(groups, false);
+
+        for (int i=0; i<ng; i++) {
+            listThreads(groups[i], indent + "  ");
+        }
     }
 }

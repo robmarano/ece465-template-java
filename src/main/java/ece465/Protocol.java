@@ -1,6 +1,7 @@
 package ece465;
 
 import java.io.*;
+import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +13,7 @@ public abstract class Protocol {
     public static String DEFAULT_SERVER_HOST = "localhost";
     public static int DEFAULT_CONTROL_PLANE_PORT = 1971;
     public static int DEFAULT_DATA_PLANE_PORT = 1972;
-    public static long DEFAULT_SLEEP_TIME_CHECK_SHUTDOWN = 10000; //msec
+    public static long DEFAULT_SLEEP_TIME_CHECK_SHUTDOWN = 2000; //msec
 
     public static int DEFAULT_CHUNK_SIZE = 4 * 1024; // 4kB chunk size of files over network
 
@@ -21,11 +22,13 @@ public abstract class Protocol {
     protected int controlPort;
     protected int dataPort;
 
+    protected final long pid;
+
     public enum STATE {
         READY, PENDING, ACTIVE, DONE, FAIL, RETRY, SENDING, RECEIVING, DISCONNECTING, EXITING, NAMING
     }; // IDLE
 
-    public enum CLIENT_EXIT_CODES {
+    public enum PROGRAM_EXIT_CODES {
         Success, NumberFormatException, IOException, InterruptedException
     };
 
@@ -39,12 +42,29 @@ public abstract class Protocol {
         super();
         this.setCurrentState(STATE.PENDING);
         this.myUniqueName = "UNKNOWN";
+        this.pid = this.fetchPid();
     }
 
     public Protocol(STATE s) {
         this();
         this.setCurrentState(s);
     }
+
+    public long getPid() {
+        return(this.pid);
+    }
+
+    public long fetchPid() {
+        String processName = ManagementFactory.getRuntimeMXBean().getName();
+        return Long.parseLong(processName.split("@")[0]);
+    }
+
+    public void writePidToLocalFile(String fileName) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+        writer.write(String.format("%d", getPid()));
+        writer.close();
+    }
+
 
     protected void printState() {
         System.out.println("Protocol state = " + getCurrentState());
@@ -99,6 +119,7 @@ public abstract class Protocol {
                     case "SHUTDOWN":
                     case "BYE":
                     case "VERSION":
+                    case "VER":
                         isValid = true;
                         break;
                     case "GET":
@@ -178,7 +199,7 @@ public abstract class Protocol {
             //instruction to implementer of Protocol: action of implementer, object of action
             STATE newState = STATE.PENDING;
             String[] event = command.split(" ");
-            String action = event[0].toUpperCase();
+            String action = event[0]; // .toUpperCase();
             // this action is defined by the Client connecting via network with this protocol
             switch (action) {
                 case "VER":
@@ -281,7 +302,7 @@ public abstract class Protocol {
                     break;
             }
             this.setCurrentState(newState);
-            System.out.println(newState + " : " + instruction.toString());
+//            System.out.println(newState + " : " + instruction.toString());
         }
         return(instruction);
     }
