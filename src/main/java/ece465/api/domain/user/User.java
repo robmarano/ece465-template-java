@@ -1,0 +1,13 @@
+package ece465.api.domain.user;
+
+import lombok.Builder;
+import lombok.Value;
+
+@Value
+@Builder
+public class User {
+
+    String id;
+    String login;
+    String password;
+}
