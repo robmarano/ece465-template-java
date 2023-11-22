@@ -32,14 +32,19 @@ RUN chmod +x /zkApp-entrypoint.sh
 # Set the entrypoint script to be executable
 #RUN chmod +x /zkApp-entrypoint.sh
 
+# port for ZK admin
 EXPOSE 8080
+# port for app 8080
 EXPOSE 8081
+# port for ZK protocol
 EXPOSE 2181
+# port for spring boot mgmt
+EXPOSE 9090
 
 # Set the entrypoint script to be the entrypoint for the container
-#ENTRYPOINT ["/zkApp-entrypoint.sh"]
+ENTRYPOINT ["/zkApp-entrypoint.sh"]
 
 # Set the default command to be the Zookeeper application
 #CMD ["java", "-jar", "/zkApp.jar"]
-CMD ["bash"]
+CMD ["/bin/bash","-c","/zkApp-entrypoint.sh"]
 
