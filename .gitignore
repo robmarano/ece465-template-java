@@ -1,6 +1,6 @@
 apache-zookeeper-3.8.3-bin
 apache-zookeeper-3.8.3-bin.tar.gz
-zk
+/zk
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
