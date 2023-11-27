@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
 #
+# cluster_zk_run.sh
+#
 # Run clusters after you create the cluster with cluster_zk_create.sh
 
+IMAGE=zookeeper
+VERSION=3.8.3
+
 # Create and run ZK node 1
-docker run -d --rm=true --publish 2181:2181 --publish 9665:8080 --env-file zookeeper1.env -v zookeeper1-dataDir:/data -v zookeeper1-dataLogDir:/datalog -v zookeeper1-logs:/logs --name zookeeper1 --network zookeeper-cluster zookeeper:3.8.3
+NODE=1
+NAME=zkApp${NODE}
+docker run -d --name ${NAME} --rm=true --hostname ${NAME} --publish 218${NODE}:2181 --publish 906${NODE}:8080 --env-file zookeeper${NODE}.env -v zookeeper${NODE}-dataDir:/data -v zookeeper${NODE}-dataLogDir:/datalog -v zookeeper${NODE}-logs:/logs --network zookeeper-cluster ${IMAGE}:${VERSION}
 
 # Create and run ZK node 2
-docker run -d --rm=true --publish 2182:2181 --publish 9666:8080 --env-file zookeeper2.env -v zookeeper2-dataDir:/data -v zookeeper2-dataLogDir:/datalog -v zookeeper2-logs:/logs --name zookeeper2 --network zookeeper-cluster zookeeper:3.8.3
+NODE=2
+NAME=zkApp${NODE}
+docker run -d --name ${NAME} --rm=true --hostname ${NAME} --publish 218${NODE}:2181 --publish 906${NODE}:8080 --env-file zookeeper${NODE}.env -v zookeeper${NODE}-dataDir:/data -v zookeeper${NODE}-dataLogDir:/datalog -v zookeeper${NODE}-logs:/logs --network zookeeper-cluster ${IMAGE}:${VERSION}
 
 # Create and run ZK node 3
-docker run -d --rm=true --publish 2183:2181 --publish 9667:8080 --env-file zookeeper3.env --mount source=zookeeper3-dataDir,target=/data --mount source=zookeeper3-dataLogDir,target=/datalog --mount source=zookeeper3-logs,target=/logs --name zookeeper3 --network zookeeper-cluster zookeeper:3.8.3
+NODE=3
+NAME=zkApp${NODE}
+docker run -d --name ${NAME} --rm=true --hostname ${NAME} --publish 218${NODE}:2181 --publish 906${NODE}:8080 --env-file zookeeper${NODE}.env -v zookeeper${NODE}-dataDir:/data -v zookeeper${NODE}-dataLogDir:/datalog -v zookeeper${NODE}-logs:/logs --network zookeeper-cluster ${IMAGE}:${VERSION}
 
 # Sleep 5 sec and then check that all nodes are running.
 sleep 5
-curl http://localhost:9665/commands/leader
+curl http://localhost:9061/commands/leader

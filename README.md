@@ -1,5 +1,48 @@
 # zkApp for ECE465
 
+# Running App Nodes as Processes
+First, start your Zookeeper (ZK) cluster. I am starting them as containers on my local computer running Docker:
+```bash
+cluster_zk_run.sh
+```
+
+Next, I start up the App nodes as processes that each depend on the running ZK cluster.
+```bash
+app_build.sh && app_run_local.sh
+```
+
+Next I open my browser and hit the following URLs to interact with the App:
+
+## For "app node 1":
+### App Interface
+```bash
+http://localhost:8081/
+```
+### Swagger Interface to issue API commands to my App service
+```bash
+http://localhost:9091/actuator/swagger-ui/index.html#/
+```
+
+## For "app node 2":
+### App Interface
+```bash
+http://localhost:8082/
+```
+### Swagger Interface to issue API commands to my App service
+```bash
+http://localhost:9092/actuator/swagger-ui/index.html#/
+```
+
+## For "app node 3":
+### App Interface
+```bash
+http://localhost:8083/
+```
+### Swagger Interface to issue API commands to my App service
+```bash
+http://localhost:9093/actuator/swagger-ui/index.html#/
+```
+
 # Resources
 * [Apache Zookeeper Explained: Tutorial, Use Cases and Zookeeper Java API Examples](http://java.globinch.com/enterprise-services/zookeeper/apache-zookeeper-explained-tutorial-cases-zookeeper-java-api-examples/)
 * [Spring Boot - Uploading Files](https://spring.io/guides/gs/uploading-files/)
@@ -19,50 +62,3 @@ CAP Theorem (Brewer's theorem/ By Eric Brewer) states that, it is nearly impossi
 
 
 
-
-
-package ece465.zk.configuration;
-
-import static springfox.documentation.builders.PathSelectors.regex;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
-
-@Configuration
-@EnableSwagger2
-public class SwaggerConfig {
-
-    /**
-     * Every Docket bean is picked up by the swagger-mvc framework - allowing for multiple swagger
-     * groups i.e. same code base multiple swagger resource listings.
-     */
-    @Bean
-    public Docket customDocket() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(regex("/.*"))
-                .paths(PathSelectors.regex("(?!/error).+"))
-                .paths(PathSelectors.regex("(?!/updateFromLeader).+"))
-                .build()
-                .apiInfo(metaData());
-    }
-
-    private ApiInfo metaData() {
-        return new ApiInfo(
-                "Sample distributed application",
-                "Spring Boot REST API for Zookeeper demo!",
-                "v1",
-                "Terms of service",
-                new Contact("Bikas Katwal", "", "bikas.katwal10@gmail.com"),
-                "",
-                "");
-    }
-}

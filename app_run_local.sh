@@ -1,16 +1,20 @@
-#!/usr/bin/env bash -x
-
+#!/usr/bin/env bash
 APP_JAR=$(pwd)/target/zkApp-1.0-SNAPSHOT.jar
+SERVER_PORT=808
+MGMT_PORT=909
 /bin/rm -rf ./nodes && \
 mkdir -p nodes/node1 && \
 mkdir -p nodes/node2 && \
 mkdir -p nodes/node3 && \
-cd nodes/node1 && \
-(java -Dserver.port=8081 -Dmanagement.server.port=9091 -Dzk.url=127.0.0.1:2181 -Dleader.algo=2 -jar ${APP_JAR} 2>&1 > node1.log &) && \
-cd ../node2 && \
-(java -Dserver.port=8082 -Dmanagement.server.port=9092 -Dzk.url=127.0.0.1:2182 -Dleader.algo=2 -jar ${APP_JAR}  2>&1 > node2.log &) && \
-cd ../node3 && \
-(java -Dserver.port=8083 -Dmanagement.server.port=9093 -Dzk.url=127.0.0.1:2183 -Dleader.algo=2 -jar ${APP_JAR}  2>&1 > node3.log &)
+NODE=1 && \
+cd ./nodes/node${NODE} && \
+(java -Dserver.port=${SERVER_PORT}${NODE} -Dmanagement.server.port=${MGMT_PORT}${NODE} -Dzk.url=localhost:218${NODE} -Dleader.algo=2 -jar ${APP_JAR} 2>&1 > node${NODE}.log &) && \
+NODE=2 && \
+cd ../node${NODE} && \
+(java -Dserver.port=${SERVER_PORT}${NODE} -Dmanagement.server.port=${MGMT_PORT}${NODE} -Dzk.url=localhost:218${NODE} -Dleader.algo=2 -jar ${APP_JAR} 2>&1 > node${NODE}.log &) && \
+NODE=3 && \
+cd ../node${NODE} && \
+(java -Dserver.port=${SERVER_PORT}${NODE} -Dmanagement.server.port=${MGMT_PORT}${NODE} -Dzk.url=localhost:218${NODE} -Dleader.algo=2 -jar ${APP_JAR} 2>&1 > node${NODE}.log &) && \
 cd ../..
 
 #mvn verify sonar:sonar -Dsonar.login=token
