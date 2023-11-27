@@ -4,6 +4,8 @@ package ece465.zk.controller;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
+import ece465.zk.api.ZkService;
+import ece465.zk.impl.ZkServiceImpl;
 import ece465.zk.services.StorageFileNotFoundException;
 import ece465.zk.services.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +37,13 @@ public class FileUploadController {
     @GetMapping("/") // the index of the site/service
     public String listUploadedFiles(Model model) throws IOException {
 
-        model.addAttribute("files", storageService.loadAll().map(
+        //List<String> liveNodes =
+
+        model.addAttribute("files",
+                storageService.loadAll().map(
                         path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
-                                "serveFile", path.getFileName().toString()).build().toUri().toString())
-                .collect(Collectors.toList()));
+                                "serveFile", path.getFileName().toString()).build().toUri().toString()
+        ).collect(Collectors.toList()));
 
         return "uploadForm";
     }

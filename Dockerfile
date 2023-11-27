@@ -42,9 +42,10 @@ EXPOSE 2181
 EXPOSE 9090
 
 # Set the entrypoint script to be the entrypoint for the container
-ENTRYPOINT ["/zkApp-entrypoint.sh"]
+#ENTRYPOINT ["/zkApp-entrypoint.sh"]
 
 # Set the default command to be the Zookeeper application
 #CMD ["java", "-jar", "/zkApp.jar"]
+#CMD ["/bin/bash"]
 CMD ["/bin/bash","-c","/zkApp-entrypoint.sh"]
 

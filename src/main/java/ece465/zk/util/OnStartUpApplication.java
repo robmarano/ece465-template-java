@@ -14,6 +14,7 @@ import java.util.List;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
@@ -26,10 +27,13 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
     private RestTemplate restTemplate = new RestTemplate();
     @Autowired private ZkService zkService;
 
+    @Qualifier("allNodesChangeListener")
     @Autowired private IZkChildListener allNodesChangeListener;
 
+    @Qualifier("liveNodeChangeListener")
     @Autowired private IZkChildListener liveNodeChangeListener;
 
+    @Qualifier("masterChangeListener")
     @Autowired private IZkChildListener masterChangeListener;
 
     @Autowired private IZkStateListener connectStateChangeListener;
