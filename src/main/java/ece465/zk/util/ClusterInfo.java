@@ -10,11 +10,8 @@ import lombok.Setter;
 @Setter
 public final class ClusterInfo {
 
+    @Getter
     private static ClusterInfo clusterInfo = new ClusterInfo();
-
-    public static ClusterInfo getClusterInfo() {
-        return clusterInfo;
-    }
 
     /*
     these will be ephemeral znodes

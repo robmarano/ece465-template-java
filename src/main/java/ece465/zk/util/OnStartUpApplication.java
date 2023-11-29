@@ -46,7 +46,7 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
             zkService.createAllParentNodes();
 
             // add this server to cluster by creating znode under /all_nodes, with name as "host:port"
-            zkService.addToAllNodes(getHostPostOfServer(), "cluster node");
+            zkService.addToAllNodes(getHostPortOfServer(), "cluster node");
             ClusterInfo.getClusterInfo().getAllNodes().clear();
             ClusterInfo.getClusterInfo().getAllNodes().addAll(zkService.getAllNodes());
 
@@ -56,7 +56,7 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
             // if approach 2 - create ephemeral sequential znode in /election
             // then get children of  /election and fetch least sequenced znode, among children znodes
             if (isEmpty(leaderElectionAlgo) || "2".equals(leaderElectionAlgo)) {
-                zkService.createNodeInElectionZnode(getHostPostOfServer());
+                zkService.createNodeInElectionZnode(getHostPortOfServer());
                 ClusterInfo.getClusterInfo().setMaster(zkService.getLeaderNodeData2());
             } else {
                 if (!zkService.masterExists()) {
@@ -71,7 +71,7 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
 
             // add child znode under /live_node, to tell other servers that this server is ready to serve
             // read request
-            zkService.addToLiveNodes(getHostPostOfServer(), "cluster node");
+            zkService.addToLiveNodes(getHostPortOfServer(), "cluster node");
             ClusterInfo.getClusterInfo().getLiveNodes().clear();
             ClusterInfo.getClusterInfo().getLiveNodes().addAll(zkService.getLiveNodes());
 
@@ -97,7 +97,7 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
 
     private void syncDataFromMaster() {
         // BKTODO need try catch here for session not found
-        if (getHostPostOfServer().equals(ClusterInfo.getClusterInfo().getMaster())) {
+        if (getHostPortOfServer().equals(ClusterInfo.getClusterInfo().getMaster())) {
             return;
         }
         String requestUrl;

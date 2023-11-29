@@ -1,20 +1,29 @@
 package ece465.zk.services;
 
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-@ConfigurationProperties("storage")
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+@Component
+@Scope("singleton")
+@ConfigurationProperties(prefix = "storage")
+@Getter
 public class StorageProperties {
 
     /**
      * Folder location for storing files
      */
-    private String location = "upload-dir";
+    private final String location = "upload-dir";
 
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
+//    public String getLocation() {
+//        return location;
+//    }
+//
+//    public void setLocation(String location) {
+//        this.location = location;
+//    }
 
 }

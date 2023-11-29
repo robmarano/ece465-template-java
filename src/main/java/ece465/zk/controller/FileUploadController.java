@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -45,6 +47,7 @@ public class FileUploadController {
                                 "serveFile", path.getFileName().toString()).build().toUri().toString()
         ).collect(Collectors.toList()));
 
+        System.out.printf("listUploadedFiles: %s\n", model.toString());
         return "uploadForm";
     }
 
@@ -56,6 +59,11 @@ public class FileUploadController {
 
         if (file == null)
             return ResponseEntity.notFound().build();
+
+        String remoteAddress = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
+                .getRequest().getRemoteAddr();
+
+        System.out.printf("Sending file %s to requester %s\n",filename, remoteAddress);
 
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + file.getFilename() + "\"").body(file);

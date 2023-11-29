@@ -1,6 +1,8 @@
 package ece465.zk;
 
 import ece465.zk.configuration.SwaggerConfiguration;
+import ece465.zk.listeners.AppFileChangeListener;
+import ece465.zk.listeners.SpringAppEventsListener;
 import ece465.zk.services.StorageService;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -8,6 +10,7 @@ import org.springframework.boot.Banner;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 
 import java.io.BufferedWriter;
@@ -36,8 +39,11 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-//        SpringApplication application = new SpringApplication(Application.class);
+//        SpringApplication.run(Application.class, args);
+        SpringApplication application = new SpringApplication(Application.class);
+        application.addListeners(new SpringAppEventsListener());
+        application.addListeners(new SwaggerConfiguration());
+        application.run(args);
 //        application.setWebEnvironment(true);
 //        application.setBannerMode(Banner.Mode.OFF);
 //        application.setLogStartupInfo(false);
@@ -59,8 +65,6 @@ public class Application {
 //        application.setAllowMultipleApplications(false);
 //        application.setAllowReference(false);
 //        application.setAllowSyntheticDefaultImports(false);
-//        application.addListeners(new SwaggerConfiguration());
-//        application.run(args);
         System.out.println("Application started");
 //        System.out.println("Application pid = " + new Application().pid);
 //        System.out.println("Application pid file = " + PID_FILE_NAME + "." + new Application().pid + ".pid");

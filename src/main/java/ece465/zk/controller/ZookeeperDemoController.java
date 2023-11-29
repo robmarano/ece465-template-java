@@ -62,7 +62,7 @@ public class ZookeeperDemoController {
             int successCount = 0;
             for (String node : liveNodes) {
 
-                if (getHostPostOfServer().equals(node)) {
+                if (getHostPortOfServer().equals(node)) {
                     Person person = new Person(id, name);
                     DataStorage.setPerson(person);
                     successCount++;
@@ -109,7 +109,7 @@ public class ZookeeperDemoController {
 
     private boolean amILeader() {
         String leader = ClusterInfo.getClusterInfo().getMaster();
-        return getHostPostOfServer().equals(leader);
+        return getHostPortOfServer().equals(leader);
     }
 
     @GetMapping("/persons")

@@ -12,6 +12,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.core.io.Resource;
@@ -24,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 @ConfigurationPropertiesScan
 @Service
 public class FileSystemStorageService implements StorageService {
-
     private final Path rootLocation;
 
     @Autowired

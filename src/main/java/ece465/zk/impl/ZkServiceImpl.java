@@ -44,7 +44,7 @@ public class ZkServiceImpl implements ZkService {
         try {
             zkClient.create(
                     ELECTION_MASTER,
-                    getHostPostOfServer(),
+                    getHostPortOfServer(),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE,
                     CreateMode.EPHEMERAL);
         } catch (ZkNodeExistsException e) {

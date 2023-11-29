@@ -16,7 +16,7 @@ public final class ZkDemoUtil {
 
     private static String ipPort = null;
 
-    public static String getHostPostOfServer() {
+    public static String getHostPortOfServer() {
         if (ipPort != null) {
             return ipPort;
         }
