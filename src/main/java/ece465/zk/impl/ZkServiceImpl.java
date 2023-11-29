@@ -1,23 +1,19 @@
 package ece465.zk.impl;
 
-import static ece465.zk.util.ZkDemoUtil.ALL_NODES;
-import static ece465.zk.util.ZkDemoUtil.ELECTION_MASTER;
-import static ece465.zk.util.ZkDemoUtil.ELECTION_NODE;
-import static ece465.zk.util.ZkDemoUtil.ELECTION_NODE_2;
-import static ece465.zk.util.ZkDemoUtil.LIVE_NODES;
-import static ece465.zk.util.ZkDemoUtil.getHostPostOfServer;
-
 import ece465.zk.api.ZkService;
 import ece465.zk.util.StringSerializer;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkNodeExistsException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
+
+import static ece465.zk.util.ZkDemoUtil.*;
 
 /** @author "Bikas Katwal" 26/03/19 */
 @Slf4j
@@ -118,6 +114,9 @@ public class ZkServiceImpl implements ZkService {
         if (!zkClient.exists(ELECTION_NODE)) {
             zkClient.create(ELECTION_NODE, "election node", CreateMode.PERSISTENT);
         }
+        if (!zkClient.exists(DATA)) {
+            zkClient.create(DATA, "data status node", CreateMode.PERSISTENT);
+        }
     }
 
     @Override
@@ -137,6 +136,11 @@ public class ZkServiceImpl implements ZkService {
     }
 
     @Override
+    public void setZNodeData(String path, String data) {
+        zkClient.writeData(path, data);
+    }
+
+    @Override
     public void createNodeInElectionZnode(String data) {
         if (!zkClient.exists(ELECTION_NODE_2)) {
             zkClient.create(ELECTION_NODE_2, "election node", CreateMode.PERSISTENT);
@@ -152,5 +156,10 @@ public class ZkServiceImpl implements ZkService {
     @Override
     public void registerZkSessionStateListener(IZkStateListener iZkStateListener) {
         zkClient.subscribeStateChanges(iZkStateListener);
+    }
+
+    @Override
+    public void registerDataChangeWatcher(String path, IZkDataListener iZkDataListener) {
+        zkClient.subscribeDataChanges(DATA, iZkDataListener);
     }
 }

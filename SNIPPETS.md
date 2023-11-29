@@ -47,3 +47,24 @@ public class SwaggerConfig {
     }
 }
 ```
+
+```bash
+function call_api() {
+  # Get the API endpoint
+  endpoint=$1
+
+  # Get the request body
+  body=$2
+
+  # Make the request
+  response=$(curl -X POST -H "Content-Type: application/json" -d "$body" "$endpoint")
+
+  # Check the response status code
+  if [[ $response -ne 200 ]]; then
+    echo "Error: API call failed with status code $response"
+    exit 1
+  fi
+
+  # Print the response body
+  echo "Response body: $response"
+}```

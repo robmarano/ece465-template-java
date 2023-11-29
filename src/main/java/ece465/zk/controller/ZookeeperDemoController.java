@@ -1,13 +1,16 @@
 package ece465.zk.controller;
 
-import static ece465.zk.util.ZkDemoUtil.getHostPostOfServer;
-import static ece465.zk.util.ZkDemoUtil.isEmpty;
-
+import ece465.zk.api.ZkService;
+import ece465.zk.impl.ZkServiceImpl;
 import ece465.zk.model.Person;
 import ece465.zk.util.ClusterInfo;
 import ece465.zk.util.DataStorage;
 import java.util.List;
+
+import ece465.zk.util.OnStartUpApplication;
+import ece465.zk.util.Utils;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -19,9 +22,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import static ece465.zk.util.ZkDemoUtil.*;
+
 /** @author "Bikas Katwal" 26/03/19 */
 @RestController
 public class ZookeeperDemoController {
+    @Autowired
+    private ZkService zkService;
 
     private RestTemplate restTemplate = new RestTemplate();
 
@@ -38,6 +45,11 @@ public class ZookeeperDemoController {
         System.out.println(request);
         String requestFrom = request.getHeader("request_from");
         String leader = ClusterInfo.getClusterInfo().getMaster();
+
+        // TODO
+        String randomString = Utils.generateRandomString(16);
+        zkService.setZNodeData(DATA, randomString);
+
         if (!isEmpty(requestFrom) && requestFrom.equalsIgnoreCase(leader)) {
             Person person = new Person(id, name);
             DataStorage.setPerson(person);

@@ -1,17 +1,11 @@
 package ece465.zk.util;
 
-import static ece465.zk.util.ZkDemoUtil.ALL_NODES;
-import static ece465.zk.util.ZkDemoUtil.ELECTION_NODE;
-import static ece465.zk.util.ZkDemoUtil.ELECTION_NODE_2;
-import static ece465.zk.util.ZkDemoUtil.LIVE_NODES;
-import static ece465.zk.util.ZkDemoUtil.getHostPostOfServer;
-import static ece465.zk.util.ZkDemoUtil.isEmpty;
-
 
 import ece465.zk.api.ZkService;
 import ece465.zk.model.Person;
 import java.util.List;
 import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,6 +13,8 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
+import static ece465.zk.util.ZkDemoUtil.*;
 
 /** @author "Bikas Katwal" 26/03/19 */
 @Component
@@ -36,7 +32,11 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
     @Qualifier("masterChangeListener")
     @Autowired private IZkChildListener masterChangeListener;
 
+    @Qualifier("connectStateChangeListener")
     @Autowired private IZkStateListener connectStateChangeListener;
+
+    @Qualifier("dataChangeListener")
+    @Autowired private IZkDataListener dataChangeListener;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
@@ -85,6 +85,11 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
             zkService.registerChildrenChangeWatcher(LIVE_NODES, liveNodeChangeListener);
             zkService.registerChildrenChangeWatcher(ALL_NODES, allNodesChangeListener);
             zkService.registerZkSessionStateListener(connectStateChangeListener);
+            // TODO
+//            StringBuilder b = new StringBuilder();
+//            DataStorage.getPersonListFromStorage().forEach(b::append);
+//            zkService.registerDataChangeWatcher(b.toString().trim(), dataChangeListener);
+            zkService.registerDataChangeWatcher(DATA, dataChangeListener);
         } catch (Exception e) {
             throw new RuntimeException("Startup failed!!", e);
         }
@@ -98,6 +103,8 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
         String requestUrl;
         requestUrl = "http://".concat(ClusterInfo.getClusterInfo().getMaster().concat("/persons"));
         List<Person> persons = restTemplate.getForObject(requestUrl, List.class);
+        // synched data in memory (RAM)
         DataStorage.getPersonListFromStorage().addAll(persons);
+        // TODO add the sync if file systems from all app cluster nodes
     }
 }

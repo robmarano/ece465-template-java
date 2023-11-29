@@ -2,12 +2,9 @@ package ece465.zk.configuration;
 
 import ece465.zk.api.ZkService;
 import ece465.zk.impl.ZkServiceImpl;
-import ece465.zk.zkwatchers.AllNodesChangeListener;
-import ece465.zk.zkwatchers.ConnectStateChangeListener;
-import ece465.zk.zkwatchers.LiveNodeChangeListener;
-import ece465.zk.zkwatchers.MasterChangeListener;
-import ece465.zk.zkwatchers.MasterChangeListenerApproach2;
+import ece465.zk.zkwatchers.*;
 import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -61,5 +58,13 @@ public class BeanConfig {
         ConnectStateChangeListener connectStateChangeListener = new ConnectStateChangeListener();
         connectStateChangeListener.setZkService(zkService());
         return connectStateChangeListener;
+    }
+
+    @Bean(name = "dataChangeListener")
+    @Scope("singleton")
+    public IZkDataListener dataChangeListener() {
+        DataChangeListener dataChangeListener = new DataChangeListener();
+        dataChangeListener.setZkService(zkService());
+        return dataChangeListener;
     }
 }

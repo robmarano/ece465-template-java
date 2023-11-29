@@ -12,6 +12,8 @@ public final class ZkDemoUtil {
     public static final String LIVE_NODES = "/liveNodes";
     public static final String ALL_NODES = "/allNodes";
 
+    public static final String DATA = "/data";
+
     private static String ipPort = null;
 
     public static String getHostPostOfServer() {
