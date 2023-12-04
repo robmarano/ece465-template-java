@@ -36,4 +36,5 @@ REM check new volumes exist
 docker volume ls
 
 REM create Docker network for zookeeper
+REM docker network rm zookeeper-cluster
 REM docker network create --driver bridge zookeeper-cluster
