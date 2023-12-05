@@ -45,11 +45,15 @@ function get_persons() {
 #
 # Simple Naming Service to get APP_LEADER_HOST and its APP_LEADER_PORT
 #
-APP_NODE=localhost
+#APP_NODE=localhost
+APP_NODE=172.17.144.1
 APP_PORT=8081
 APP_LEADER_COUPLET=$(curl --silent -X 'GET' http://${APP_NODE}:${APP_PORT}/clusterInfo -H 'accept: */*' | jq .master | sed 's/^"\(.*\)"$/\1/')
 APP_LEADER_HOST=$(echo ${APP_LEADER_COUPLET} | awk -F : '{print $1}')
 APP_LEADER_PORT=$(echo ${APP_LEADER_COUPLET} | awk -F : '{print $2}')
+
+echo $APP_LEADER_HOST
+echo $APP_LEADER_PORT
 
 #
 # Using APP API, add new data, i.e., person name = luca; person id = 2121
@@ -64,15 +68,15 @@ APP_LEADER_PORT=$(echo ${APP_LEADER_COUPLET} | awk -F : '{print $2}')
 #  echo $i
 #done
 
-persons=(alice bob john joe mary stuart cain morgan betty alfred)
+#persons=(alice bob john joe mary stuart cain morgan betty alfred)
 
 # create persons
-i=0
-for p in ""${persons[@]}""; do
-  i=$((i+1))
-  echo $p $i
-  call_person_api $i $p
-done
-
-#  get persons
-get_persons | jq .
+#i=0
+#for p in ""${persons[@]}""; do
+#  i=$((i+1))
+#  echo $p $i
+#  call_person_api $i $p
+#done
+#
+##  get persons
+#get_persons | jq .
