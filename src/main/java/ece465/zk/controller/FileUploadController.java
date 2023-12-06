@@ -8,6 +8,9 @@ import ece465.zk.api.ZkService;
 import ece465.zk.impl.ZkServiceImpl;
 import ece465.zk.services.StorageFileNotFoundException;
 import ece465.zk.services.StorageService;
+import ece465.zk.util.ClusterInfo;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -26,10 +29,16 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import static ece465.zk.util.ZkDemoUtil.ALL_NODES;
+import static ece465.zk.util.ZkDemoUtil.APP;
+
 @Controller
 public class FileUploadController {
 
     private final StorageService storageService;
+    @Autowired
+    private ZkService zkService;
+
 
     @Autowired
     public FileUploadController(StorageService storageService) {
@@ -72,6 +81,24 @@ public class FileUploadController {
     @PostMapping("/")
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
                                    RedirectAttributes redirectAttributes) {
+
+        String remoteAddress = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
+                .getRequest().getRemoteAddr();
+        try {
+            zkService.createNodeInAppZnode(remoteAddress, remoteAddress);
+        } catch (KeeperException.NodeExistsException ex) {
+            System.out.printf("Node %s already exists\n", remoteAddress);
+        }
+
+//        sb.delete(0, sb.length());
+        StringBuilder sb = new StringBuilder(remoteAddress);
+        sb.append("/");
+        sb.append(file.getOriginalFilename());
+        try {
+            zkService.createNodeInAppZnode(sb.toString(), ClusterInfo.getClusterInfo().getMaster());
+        } catch (KeeperException.NodeExistsException ex) {
+            System.out.printf("Node %s already exists\n", sb.toString());
+        }
 
         storageService.store(file);
         redirectAttributes.addFlashAttribute("message",

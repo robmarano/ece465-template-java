@@ -4,6 +4,9 @@ import ece465.zk.api.ZkService;
 import ece465.zk.util.StringSerializer;
 import java.util.Collections;
 import java.util.List;
+
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
@@ -11,6 +14,7 @@ import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkNodeExistsException;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 
 import static ece465.zk.util.ZkDemoUtil.*;
@@ -19,6 +23,7 @@ import static ece465.zk.util.ZkDemoUtil.*;
 @Slf4j
 public class ZkServiceImpl implements ZkService {
 
+    //@Getter(value = AccessLevel.PUBLIC) //TODO rob
     private ZkClient zkClient;
 
 
@@ -117,6 +122,9 @@ public class ZkServiceImpl implements ZkService {
         if (!zkClient.exists(DATA)) {
             zkClient.create(DATA, "data status node", CreateMode.PERSISTENT);
         }
+        if (!zkClient.exists(APP)) {
+            zkClient.create(APP, "app logic node", CreateMode.PERSISTENT);
+        }
     }
 
     @Override
@@ -161,5 +169,13 @@ public class ZkServiceImpl implements ZkService {
     @Override
     public void registerDataChangeWatcher(String path, IZkDataListener iZkDataListener) {
         zkClient.subscribeDataChanges(DATA, iZkDataListener);
+    }
+
+    /*
+     * App Logic
+     */
+    @Override
+    public void createNodeInAppZnode(String nodeName, String data) throws KeeperException.NodeExistsException {
+        zkClient.create(APP.concat("/").concat(nodeName), data, CreateMode.PERSISTENT);
     }
 }

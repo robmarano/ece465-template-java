@@ -14,6 +14,8 @@ public final class ZkDemoUtil {
 
     public static final String DATA = "/data";
 
+    public static final String APP = "/app";
+
     private static String ipPort = null;
 
     public static String getHostPortOfServer() {

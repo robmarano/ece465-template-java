@@ -42,7 +42,7 @@ public class OnStartUpApplication implements ApplicationListener<ContextRefreshe
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         try {
 
-            // create all parent nodes /election, /all_nodes, /live_nodes
+            // create all parent nodes /election, /all_nodes, /live_nodes, /app
             zkService.createAllParentNodes();
 
             // add this server to cluster by creating znode under /all_nodes, with name as "host:port"
